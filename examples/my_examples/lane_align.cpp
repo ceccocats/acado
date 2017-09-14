@@ -58,17 +58,16 @@ int main( )
 
     ocp.subjectTo( f );
 
-//    ocp.minimizeLSQ(W, h, r);
-//    ocp.minimizeLSQEndTerm(WN, hN, rN);
-    ocp.minimizeLSQ(W, h);
-    ocp.minimizeLSQEndTerm(WN, hN);
+    ocp.minimizeLSQ(W, h, r);
+    ocp.minimizeLSQEndTerm(WN, hN, rN);
+//    ocp.minimizeLSQ(W, h);
+//    ocp.minimizeLSQEndTerm(WN, hN);
 
 
     ocp.subjectTo( -10.0 <= a <= 10.0 );
     ocp.subjectTo( -5 <= v <= 20 );
     ocp.subjectTo( -0.6 <= phi <= 0.6 );
 
-/*
     // SETTING UP THE (SIMULATED) PROCESS:
     // -----------------------------------
 	OutputFcn identity;
@@ -118,7 +117,7 @@ int main( )
     w2.addSubplot( feedbackControl(1),      "throttle");
     w2.plot();
 
-*/
+/*
     // Export the code:
     OCPexport mpc( ocp );
 
@@ -137,6 +136,6 @@ int main( )
         exit( EXIT_FAILURE );
 
     mpc.printDimensionsQP( );
-
+*/
     return EXIT_SUCCESS;
 }
