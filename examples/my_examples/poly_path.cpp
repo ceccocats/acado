@@ -12,11 +12,6 @@ int main( )
     DifferentialState   y;  // distance from lane
     DifferentialState   o;  // car angle 
     DifferentialState   v;  // velocity
-    DifferentialState   A;
-    DifferentialState   B;
-    DifferentialState   C;
-    DifferentialState   D;
-
 
     Control   phi;  // the steer angle
     Control   a;    // the acc. of the car
@@ -25,35 +20,27 @@ int main( )
 
     // Model equations:
     DifferentialEquation f; 
-
-
     f << dot( x ) == cos(o + phi)*v;
     f << dot( y ) == sin(o + phi)*v;
     f << dot( o ) == (v/L)*tan(phi);
     f << dot( v ) == a;
-    f << dot( A ) == (y           - B*x*x - C*x - D) / (x*x*x);
-    f << dot( B ) == (y - A*x*x*x         - C*x - D) / (x*x);
-    f << dot( C ) == (y - A*x*x*x - B*x*x       - D) / (x);
-    f << dot( D ) == (y - A*x*x*x - B*x*x - C*x    );
 
     // Reference functions and weighting matrices:
     Function h;
-    h << o << v;
-    h << A << B << C << D;
+    h << x << y << o << v;
     h << phi << a;
 
-    DMatrix W(8, 8);
+    DMatrix W(6, 6);
     W.setIdentity();
     
     Function hN;
-    hN << o << v;
-    hN << A << B << C << D;
-
-    DMatrix WN(6, 6);
+    hN << x << y << o << v;
+    
+    DMatrix WN(4, 4);
     WN.setIdentity();
 
     //refs ONLY FOR SIMULATION
-    DVector r(8) ;
+    DVector r(6) ;
     r.setAll(0.0);
     r(5) = 10;
 
@@ -68,15 +55,15 @@ int main( )
 
     ocp.subjectTo( f );
 
-    ocp.minimizeLSQ(W, h, r);
-    ocp.minimizeLSQEndTerm(WN, hN, rN);
-//    ocp.minimizeLSQ(W, h);
-//    ocp.minimizeLSQEndTerm(WN, hN);
+//    ocp.minimizeLSQ(W, h, r);
+//    ocp.minimizeLSQEndTerm(WN, hN, rN);
+    ocp.minimizeLSQ(W, h);
+    ocp.minimizeLSQEndTerm(WN, hN);
 
     ocp.subjectTo( -10.0 <= a <= 10.0 );
     ocp.subjectTo( -5 <= v <= 20 );
     ocp.subjectTo( -0.6 <= phi <= 0.6 );
-
+/*
     // SETTING UP THE (SIMULATED) PROCESS:
     // -----------------------------------
 	OutputFcn identity;
@@ -97,7 +84,7 @@ int main( )
     // ----------------------------------------------------------
 	SimulationEnvironment sim( 0.0,5.0,process,controller );
 
-	DVector x0(8);
+	DVector x0(6);
 	x0(0) = 0.1;
 	x0(1) = 3.0;
 	x0(2) = 0.0;
@@ -126,8 +113,8 @@ int main( )
 	w2.addSubplot( feedbackControl(0),      "steer angle");
     w2.addSubplot( feedbackControl(1),      "throttle");
     w2.plot();
+*/
 
-/*
     // Export the code:
     OCPexport mpc( ocp );
 
@@ -146,6 +133,6 @@ int main( )
         exit( EXIT_FAILURE );
 
     mpc.printDimensionsQP( );
-*/
+
     return EXIT_SUCCESS;
 }

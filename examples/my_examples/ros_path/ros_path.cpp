@@ -15,6 +15,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/PoseStamped.h"
 
+#include "mpc.cpp"
 
 geometry_msgs::Pose new_pose(float x, float y, float yaw, float speed) {
 
@@ -237,6 +238,8 @@ int main(int argc, char **argv) {
         points_pub.publish(ref_points_msg);
         path_pub.publish(ref_path_msg);
         ref_pub.publish(ref_horizon_msg);
+
+        mpc_control();
 
         rate.sleep();
         ros::spinOnce();
