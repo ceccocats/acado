@@ -16,7 +16,7 @@ int main( )
     Control   phi;  // the steer angle
     Control   a;    // the acc. of the car
 
-    const double  L = 3.0f; //axes distance
+    const double  L = 0.4f; //axes distance
 
     // Model equations:
     DifferentialEquation f; 
@@ -44,7 +44,7 @@ int main( )
     r.setAll(0.0);
     r(5) = 10;
 
-    DVector rN(6) ;
+    DVector rN(4) ;
     rN.setAll(0.0) ;
     r(5) = 10;
 
@@ -60,9 +60,9 @@ int main( )
     ocp.minimizeLSQ(W, h);
     ocp.minimizeLSQEndTerm(WN, hN);
 
-    ocp.subjectTo( -10.0 <= a <= 10.0 );
+    ocp.subjectTo( -1.0 <= a <= 1.0 );
     ocp.subjectTo( -5 <= v <= 20 );
-    ocp.subjectTo( -0.6 <= phi <= 0.6 );
+    ocp.subjectTo( -1 <= phi <= 1 );
 /*
     // SETTING UP THE (SIMULATED) PROCESS:
     // -----------------------------------

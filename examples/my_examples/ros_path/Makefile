@@ -4,7 +4,7 @@ ROS_LIBS=-lroscpp -lrosconsole -lroscpp_serialization -lrostime -ltf
 ROS_LIBS_DIR=/opt/ros/indigo/lib
 
 LIBS=-lboost_system -lm -lstdc++ $(ROS_LIBS)
-ACADO_LIB=/home/ron/Documents/mpc/ACADOtoolkit/examples/my_examples/poly_path_code/libacado_exported_rti.a
+ACADO_LIB=../poly_path_code/libacado_exported_rti.a
 
 LFLAGS=-L$(ROS_LIBS_DIR) -L. $(LIBS) $(ACADO_LIB)
 

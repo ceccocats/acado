@@ -22,7 +22,7 @@ ACADOvariables acadoVariables;
 ACADOworkspace acadoWorkspace;
 
 /* A template for testing of the solver. */
-int mpc_control( ) {
+race::drive_param mpc_control(mpc_ref_t *mpc_ref, int N_REFS) {
 
 	/* Some temporary variables. */
 	int    i, iter;
@@ -37,14 +37,25 @@ int mpc_control( ) {
 
 	/* Initialize the measurements/reference. */
 	for (i = 0; i < NY * N; ++i)  acadoVariables.y[ i ] = 0.0;
+	for (i = 0; i < N; i+= NY) {
+		acadoVariables.y[i]   = mpc_ref[i].x;
+		acadoVariables.y[i+1] = mpc_ref[i].y;
+		acadoVariables.y[i+2] = mpc_ref[i].phi;
+		acadoVariables.y[i+3] = mpc_ref[i].speed;
+		// steer and acc to zero 
+	}
+
 	for (i = 0; i < NYN; ++i)  acadoVariables.yN[ i ] = 0.0;
+	acadoVariables.yN[0] = mpc_ref[N_REFS-1].x;
+	acadoVariables.yN[1] = mpc_ref[N_REFS-1].y;
+	acadoVariables.yN[2] = mpc_ref[N_REFS-1].phi;
+	acadoVariables.yN[3] = mpc_ref[N_REFS-1].speed;
 
 	/* MPC: initialize the current state feedback. */
 #if ACADO_INITIAL_STATE_FIXED
 	for (i = 0; i < NX; ++i) acadoVariables.x0[ i ] = 0.0;
+	acadoVariables.x0[3] = 0.8f; 
 #endif
-
-	if( VERBOSE ) acado_printHeader();
 
 	/* Prepare first step */
 	acado_preparationStep();
@@ -60,8 +71,6 @@ int mpc_control( ) {
 
 		/* Apply the new control immediately to the process, first NU components. */
 
-		if( VERBOSE ) printf("\tReal-Time Iteration %d:  KKT Tolerance = %.3e\n\n", iter, acado_getKKT() );
-
 		/* Optional: shift the initialization (look at acado_common.h). */
         /* acado_shiftStates(2, 0, 0); */
 		/* acado_shiftControls( 0 ); */
@@ -72,15 +81,19 @@ int mpc_control( ) {
 	/* Read the elapsed time. */
 	real_t te = acado_toc( &t );
 
-	if( VERBOSE ) printf("\n\nEnd of the RTI loop. \n\n\n");
 
-	/* Eye-candy. */
+	//acado_printDifferentialVariables();
+	//acado_printControlVariables();
+	for (i = 0; i < N+1; i+=NX) {
+		mpc_ref[i].x     = acadoVariables.x[i];
+		mpc_ref[i].y     = acadoVariables.x[i+1];
+		mpc_ref[i].phi   = acadoVariables.x[i+2];
+		mpc_ref[i].speed = acadoVariables.x[i+3];
+	}
 
-	if( !VERBOSE )
-	printf("\n\n Average time of one real-time iteration:   %.3g microseconds\n\n", 1e6 * te / NUM_STEPS);
-
-	acado_printDifferentialVariables();
-	acado_printControlVariables();
-
-    return 0;
+	printf("steer: %f, throttle: %f\n", acadoVariables.u[0]*100, acadoVariables.u[1]*100);
+	race::drive_param drive_msg;
+	drive_msg.angle = -acadoVariables.u[0]*100;
+	drive_msg.velocity = 100; //acadoVariables.u[1]*100;
+    return drive_msg;
 }
