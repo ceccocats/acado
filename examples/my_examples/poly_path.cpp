@@ -12,6 +12,8 @@ int main( )
     DifferentialState   y;  // distance from lane
     DifferentialState   o;  // car angle 
     DifferentialState   v;  // velocity
+    DifferentialState   cte, pte; //cross track error
+    OnlineData A, B, C, D;
 
     Control   phi;  // the steer angle
     Control   a;    // the acc. of the car
@@ -25,28 +27,32 @@ int main( )
     f << dot( o ) == (v/L)*tan(phi);
     f << dot( v ) == a;
 
+    f << dot( cte ) == y - (A*x*x*x + B*x*x + C*x + D);
+    f << dot( pte ) == o - atan(3*A*x*x + 2*B*x + C);
     // Reference functions and weighting matrices:
     Function h;
-    h << x << y << o << v;
+    h << v << cte << pte;
     h << phi << a;
 
-    DMatrix W(6, 6);
+    DMatrix W(5, 5);
     W.setIdentity();
-    
+    //W(0,0) = 0.2;
+     
     Function hN;
-    hN << x << y << o << v;
+    hN << v << cte << pte;
     
-    DMatrix WN(4, 4);
+    DMatrix WN(3, 3);
     WN.setIdentity();
+    //WN(0,0) = 0.2;
 
     //refs ONLY FOR SIMULATION
-    DVector r(6) ;
+    DVector r(5) ;
     r.setAll(0.0);
-    r(5) = 10;
+    r(0) = 10;
 
-    DVector rN(4) ;
+    DVector rN(3) ;
     rN.setAll(0.0) ;
-    r(5) = 10;
+    r(0) = 10;
 
     //
     // Optimal Control Problem
@@ -62,7 +68,7 @@ int main( )
 
     ocp.subjectTo( -1.0 <= a <= 1.0 );
     ocp.subjectTo( -5 <= v <= 20 );
-    ocp.subjectTo( -1 <= phi <= 1 );
+    ocp.subjectTo( -0.7 <= phi <= 0.7 );
 /*
     // SETTING UP THE (SIMULATED) PROCESS:
     // -----------------------------------
@@ -121,7 +127,7 @@ int main( )
     mpc.set( HESSIAN_APPROXIMATION,       GAUSS_NEWTON    );
     mpc.set( DISCRETIZATION_TYPE,         SINGLE_SHOOTING );
     mpc.set( INTEGRATOR_TYPE,             INT_RK4         );
-    mpc.set( NUM_INTEGRATOR_STEPS,        30              );
+    mpc.set( NUM_INTEGRATOR_STEPS,        60              );
 
     mpc.set( QP_SOLVER,                   QP_QPOASES      );
     mpc.set( GENERATE_TEST_FILE,          YES             );

@@ -24,6 +24,13 @@ struct mpc_ref_t {
     float speed;
 };
 
+struct speed_pos_t {
+    float x, y;
+    ros::Time t;
+};
+
+
+
 #include "mpc.cpp"
 
 geometry_msgs::Pose new_pose(float x, float y, float yaw, float speed) {
@@ -130,6 +137,7 @@ int main(int argc, char **argv) {
     ros::Publisher points_pub = n.advertise<visualization_msgs::Marker>("ref_points", 10);
     ros::Publisher path_pub = n.advertise<nav_msgs::Path>("ref_path", 10);
     ros::Publisher ref_pub = n.advertise<visualization_msgs::Marker>("ref_horizon", 10);
+    ros::Publisher calc_pub = n.advertise<visualization_msgs::Marker>("calc_horizon", 10);
     ros::Publisher drive_pub = n.advertise<race::drive_param>("drive_parameters", 1);
 
     // DEFINE POINTS REF PATH
@@ -159,6 +167,12 @@ int main(int argc, char **argv) {
     }
     path_file.close();
 
+    // FOR SPEED CALCULATION
+    const int SPEED_POS = 5;
+    speed_pos_t speed_pos[SPEED_POS];
+    float speed = 0;
+    int speed_pos_i = 0;
+
     // PATH ITER POS
     int POS = PTS_DIM;
 
@@ -181,6 +195,24 @@ int main(int argc, char **argv) {
         double yaw, pitch, roll;
         tf::Matrix3x3(transform.getRotation()).getRPY(roll, pitch, yaw);
 
+        //UPDATE speed
+        speed = 0; //speed for mean
+        for(int i=0; i<SPEED_POS; i++) {
+            speed_pos_t pos = speed_pos[(speed_pos_i +i) % SPEED_POS ];
+            float dx = car_x - pos.x;
+            float dy = car_y - pos.y;
+            float dt = (transform.stamp_ - pos.t).toSec();
+            float space = sqrt(dx*dx + dy*dy);
+            speed += space / dt;
+        }
+        speed /= SPEED_POS;
+        std::cout<<"speed: "<<speed<<"\n";
+        // insert pos in array
+        speed_pos[speed_pos_i % SPEED_POS].x = car_x;
+        speed_pos[speed_pos_i % SPEED_POS].y = car_y;
+        speed_pos[speed_pos_i % SPEED_POS].t = transform.stamp_;
+        speed_pos_i++;
+
         //UPDATE ITER POS
         if(point_passed(car_x, car_y, pts[POS % PTS_DIM].position.x, pts[POS % PTS_DIM].position.y, yaw)) {
             POS += 1;
@@ -188,7 +220,7 @@ int main(int argc, char **argv) {
         }
     
         // CALCULATE RELATIVE PATH
-        int PTS4PATH = 10;
+        int PTS4PATH = 15;
         int BEHIND = 5;
 
         Eigen::VectorXd waypoints_x_eig(PTS4PATH);
@@ -223,42 +255,28 @@ int main(int argc, char **argv) {
         std::vector<geometry_msgs::PoseStamped> v2(path, path+(PATH_DIM));
         ref_path_msg.poses = v2; 
 
-        // CALCULATE REFS
-        visualization_msgs::Marker ref_horizon_msg = init_point_viz("footprint", 0, 1, 0);
-        float SECS = 3.0;
+        // REFS
+        float A = coeffs[3];
+        float B = coeffs[2];
+        float C = coeffs[1];
+        float D = coeffs[0];
         const int INTERVALS = 10;
-        float L = 0.4f;
-        float dt = SECS/INTERVALS;
-        float x = 0;
         mpc_ref_t mpc_ref[INTERVALS];
+        race::drive_param drive_msg = mpc_control(A, B, C, D, speed, mpc_ref);
+	    printf("steer: %f, throttle: %f\n", drive_msg.angle, drive_msg.velocity);
 
-        for(int i=0; i<INTERVALS; i++) {
-            geometry_msgs::Point p;
-            float phi = atan(3*coeffs[3]*x*x + 2*coeffs[2]*x + coeffs[1]);
-            x += cos(phi)*dt*0.8f; //0.nf is speed
-            p.x = x;
-            p.y = polyeval(coeffs, p.x);
-            ref_horizon_msg.points.push_back(p);
-            //set mpc ref
-            mpc_ref[i].x = p.x;
-            mpc_ref[i].y = p.y;
-            mpc_ref[i].phi = phi;
-            mpc_ref[i].speed = 0.8f;
-        }
-
-        race::drive_param drive_msg = mpc_control(mpc_ref, INTERVALS);
-
+        visualization_msgs::Marker calc_horizon_msg = init_point_viz("footprint", 0, 0, 1);
         for(int i=0; i<INTERVALS; i++) {
             geometry_msgs::Point p;
             p.x = mpc_ref[i].x;
             p.y = mpc_ref[i].y;
-            ref_horizon_msg.points.push_back(p);
+            calc_horizon_msg.points.push_back(p);
         }
 
         drive_pub.publish(drive_msg);
         points_pub.publish(ref_points_msg);
         path_pub.publish(ref_path_msg);
-        ref_pub.publish(ref_horizon_msg);
+        calc_pub.publish(calc_horizon_msg);
 
         rate.sleep();
         ros::spinOnce();
