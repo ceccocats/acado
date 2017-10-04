@@ -20,6 +20,8 @@ int main( )
 
     const double  L = 0.4f; //axes distance
 
+    //IntermediateState lol;
+
     // Model equations:
     DifferentialEquation f; 
     f << dot( x ) == cos(o + phi)*v;
@@ -68,7 +70,7 @@ int main( )
 
     ocp.subjectTo( -1.0 <= a <= 1.0 );
     ocp.subjectTo( -5 <= v <= 20 );
-    ocp.subjectTo( -0.7 <= phi <= 0.7 );
+    ocp.subjectTo( -0.785398 <= phi <= 0.785398 );
 /*
     // SETTING UP THE (SIMULATED) PROCESS:
     // -----------------------------------

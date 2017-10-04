@@ -52,8 +52,8 @@ race::drive_param mpc_control(float A, float B, float C, float D, float init_spe
 #if ACADO_INITIAL_STATE_FIXED
 	for (i = 0; i < NX; ++i) acadoVariables.x0[ i ] = 0.0;
 	acadoVariables.x0[3] = init_speed; 
-	acadoVariables.x0[6] = last_steer;
-	acadoVariables.x0[7] = last_throttle;
+	//acadoVariables.x0[6] = last_steer;
+	//acadoVariables.x0[7] = last_throttle;
 #endif
 
 	/* Initialize online data */
@@ -103,7 +103,7 @@ race::drive_param mpc_control(float A, float B, float C, float D, float init_spe
 	last_throttle = acadoVariables.u[1];
 
 	race::drive_param drive_msg;
-	drive_msg.angle = (-acadoVariables.u[0]/0.7)*100;
+	drive_msg.angle = (-acadoVariables.u[0]/0.785398)*100;
 	drive_msg.velocity = acadoVariables.u[1]*100;
     return drive_msg;
 }
