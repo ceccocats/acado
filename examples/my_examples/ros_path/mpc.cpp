@@ -52,8 +52,8 @@ race::drive_param mpc_control(float A, float B, float C, float D, float init_spe
 #if ACADO_INITIAL_STATE_FIXED
 	for (i = 0; i < NX; ++i) acadoVariables.x0[ i ] = 0.0;
 	acadoVariables.x0[3] = init_speed; 
-	//acadoVariables.x0[6] = last_steer;
-	//acadoVariables.x0[7] = last_throttle;
+	acadoVariables.x0[6] = last_steer;
+	acadoVariables.x0[7] = last_throttle;
 #endif
 
 	/* Initialize online data */
@@ -99,6 +99,8 @@ race::drive_param mpc_control(float A, float B, float C, float D, float init_spe
 		mpc_ref[i%(N+1)].speed = acadoVariables.x[i+3];
 	}
 
+
+	//delete NaNs
 	last_steer = acadoVariables.u[0];
 	last_throttle = acadoVariables.u[1];
 

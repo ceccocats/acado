@@ -196,16 +196,18 @@ int main(int argc, char **argv) {
         tf::Matrix3x3(transform.getRotation()).getRPY(roll, pitch, yaw);
 
         //UPDATE speed
-        speed = 0; //speed for mean
+        float speed_calc = 0; //speed for mean
         for(int i=0; i<SPEED_POS; i++) {
             speed_pos_t pos = speed_pos[(speed_pos_i +i) % SPEED_POS ];
             float dx = car_x - pos.x;
             float dy = car_y - pos.y;
             float dt = (transform.stamp_ - pos.t).toSec();
             float space = sqrt(dx*dx + dy*dy);
-            speed += space / dt;
+            speed_calc += space / dt;
         }
-        speed /= SPEED_POS;
+        speed_calc /= SPEED_POS;
+        if(speed_calc == speed_calc)
+            speed = speed_calc;
         std::cout<<"speed: "<<speed<<"\n";
         // insert pos in array
         speed_pos[speed_pos_i % SPEED_POS].x = car_x;
